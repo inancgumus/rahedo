@@ -1,0 +1,18 @@
+function log {
+  echo
+  echo
+  echo --------------------------------------------
+  echo $@
+  echo --------------------------------------------
+  echo
+}
+
+function log2 {
+  echo
+  echo .... $@
+}
+
+function changedir {
+  cd $@
+  log2 Current directory: `pwd`
+}
