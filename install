@@ -1,0 +1,47 @@
+#!/bin/bash
+source 'common'
+
+log current ruby version:
+ruby -v
+
+log current gems:
+gem list
+
+rvm current
+
+log load rvm again:
+cd .
+
+log gem install bundler...
+gem install bundler -q -V -d --no-rdoc --no-ri
+
+log bundle install...
+bundle install --binstubs --quiet
+
+log db:create...
+bundle exec rake --quiet db:create
+
+log db:migrate...
+bundle exec rake --quiet db:migrate
+
+log db:seed:development...
+bundle exec rake --quiet db:seed:development
+
+log db:test:prepare...
+bundle exec rake --quiet db:test:prepare
+
+log creating the temporary directory...
+mkdir tmp
+
+log adding heroku to git remotes...
+git remote add heroku git@heroku.com:yourgitrepo.git
+git remote add heroku-staging git@heroku.com:yourgitrepo-staging.git
+
+log precaching assets...
+bundle exec rake assets:precompile --quiet RAILS_ENV=production
+bundle exec rake assets:precompile --quiet RAILS_ENV=staging
+
+log current gems:
+gem list
+
+log You should be all set...
