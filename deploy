@@ -1,0 +1,166 @@
+#!/bin/bash
+source 'common'
+
+PWD=`pwd`
+ORIGIN_DIR=`basename $PWD`
+DEPLOYMENT_DIR="deployment"
+COMPILE_ASSETS=1
+DEPLOY_ASSETS=1
+DEPLOY_APP=1
+
+ENV=$1
+if [ ! -e "config/environments/$ENV.rb" ]
+then
+  echo "Select your target heroku environment: staging, production"
+  exit 1
+fi
+
+ASSETS='public/assets'
+if [ $ENV != 'production' ]
+then
+  ASSETS="$ASSETS-$ENV"
+  DEPLOYMENT_DIR="$DEPLOYMENT_DIR-$ENV"
+fi
+
+HEROKU_ENV="heroku"
+if [ $ENV != 'production' ]
+then
+  HEROKU_ENV="$HEROKU_ENV-$ENV"
+fi
+
+if [[ $@ =~ ' --without-assets' ]]
+then
+  log2 "No assets will be deployed"
+  DEPLOY_ASSETS=0
+fi
+
+if [[ $@ =~ ' --without-app' ]]
+then
+  log2 "No app, only assets will be deployed"
+  DEPLOY_APP=0
+fi
+
+if [[ $@ =~ ' --without-asset-compilation' ]]
+then
+  log2 "No assets will be compiled"
+  COMPILE_ASSETS=0
+fi
+
+log create a changelog
+LAST_DEPLOY_REF='-'
+
+if [[ "$@" =~ --ref:([a-z0-9]{4,})\s* ]]; then
+  LAST_DEPLOY_REF="${BASH_REMATCH[1]}"
+  CHANGE_LOG=`git log ...$LAST_DEPLOY_REF --no-merges --pretty=format:'-- %s'`
+else
+  CHANGE_LOG="No comment"
+fi
+
+echo Deploy from: $ORIGIN_DIR
+echo Deploy to: $DEPLOYMENT_DIR
+echo Target local environment: $ENV
+echo Target Heroku environment: $HEROKU_ENV
+echo Last Deploy Ref: $LAST_DEPLOY_REF
+echo Changelog: $CHANGE_LOG
+
+# TODO: If there are uncommitted changes to the source code, cancel the deployment
+
+log temporarily save the assets
+mv app/assets/images/ ..
+# add more assets here
+ls app/assets/images
+
+log remove the old assets
+rm -rf $ASSETS
+
+log clear the asset caches
+bundle exec rake tmp:clear
+rake assets:clean RAILS_ENV=$ENV
+
+log compile the assets
+if [ $COMPILE_ASSETS -eq 1 ]
+then
+  rake assets:precompile --quiet RAILS_ENV=$ENV
+fi
+
+log2 save $ASSETS/manifest.yml
+if [ ! -e "$ASSETS/manifest.yml" ]; then
+  echo "$ASSETS/manifest.yml not found..."
+  echo "  be sure that it is in the source directory so it can be deployed "
+  echo "   heroku"
+  exit 2
+fi
+
+if [ $DEPLOY_ASSETS -eq 1 ]
+then
+  # be sure that rsync_pass is chmod 600
+  log update assets on cdn
+  rsync -var --exclude 'assets*' $ASSETS rsync://yourcdn.com --password-file config/rsync_pass
+
+  log refresh the cdn edge server
+  curl --data "queryparameters" https://yourcdn.com/purge/all
+fi
+
+mv $ASSETS/manifest.yml ./manifest.yml
+rm -rf $ASSETS; mkdir $ASSETS
+mv ./manifest.yml $ASSETS/manifest.yml
+
+changedir ..
+
+log remove the old deployment directory and create a new one
+if [ -e $DEPLOYMENT_DIR ]; then
+  rm -rf $DEPLOYMENT_DIR
+  log2 deployment directory removed
+fi
+
+mkdir $DEPLOYMENT_DIR
+log2 done
+
+log copy the source codes to the pre-deployment directory
+changedir $ORIGIN_DIR
+tar zcpf - . | (cd ../$DEPLOYMENT_DIR; tar xfp -)
+log2 done
+
+log put back the assets into their original directories
+#mv ../your-assets app/assets/images
+ls app/assets/images
+log2 done
+
+changedir ../$ORIGIN_DIR
+
+# copy robots.txt into the deployment directory
+if [ $ENV != 'production' ]
+then
+  log2 copying robots.txt for $ENV
+  cp public/robots-$ENV.txt ../$DEPLOYMENT_DIR/public/robots.txt
+fi
+
+changedir ../$DEPLOYMENT_DIR
+
+log remove git, bundle and tmp temporary files
+rm -rf .git .bundle tmp log app/assets
+
+log init git
+git init
+git add .
+
+mkdir -p public/assets
+cp $ASSETS/manifest.yml public/assets/
+
+git add public/assets/manifest.yml --force
+git add $ASSETS/manifest.yml --force
+
+log copy .git/config to the deployment directory
+cp ../$ORIGIN_DIR/.git/config .git/config
+
+log commit deployment directory with changelog message
+git commit -am "$CHANGE_LOG"
+
+if [ $DEPLOY_APP -eq 1 ]
+then
+  log start deployment to heroku
+  git push $HEROKU_ENV --force
+fi
+
+changedir ../$ORIGIN_DIR
+echo Last deployment ref: `git log HEAD^.. --pretty=format:'%h'`
