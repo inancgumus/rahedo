@@ -13,9 +13,6 @@ Use this task to init a Rails app after cloning from a git repo for the first ti
 * Precompiles assets
 
 
-----
-
-
 # Deploy task #
 
 Use this task to deploy a rails app to any Heroku environment.
