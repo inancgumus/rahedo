@@ -3,6 +3,14 @@ heroku-deployer
 
 Tasks for local rails initialization and heroku deployment.
 
+
+# Yet another deployer? #
+
+This deployer is for whom would like to deploy without using a framework like Capistrano etc. But, through raw shell. I prefer sometimes both.
+
+Also, with this deployer you don't need to use Amazon servers as with most of the other deployers. You can deploy to any cdn and even also just refresh cdn files.
+
+
 # Install task #
 
 Use this task to init a Rails app after cloning from a git repo for the first time. It just makes things easy for you.
