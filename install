@@ -1,6 +1,19 @@
 #!/bin/bash
 source 'common'
 
+if [ "$1" == "" ]; then
+  # default to the current directory name if no name provided
+  reponame=${PWD##*/}
+  echo "********************************************"
+  echo "  You have not supplied a repository name"
+  echo "    we have used ${reponame} instead."
+  echo "********************************************"
+  echo 
+else
+  # use only the basename
+  reponame=$(basename $1)
+fi
+
 log current ruby version:
 ruby -v
 
@@ -27,19 +40,20 @@ bundle exec rake --quiet db:migrate
 log db:seed:development...
 bundle exec rake --quiet db:seed:development
 
-log db:test:prepare...
-bundle exec rake --quiet db:test:prepare
+# the next command has been deprecated in the lates versions of rails
+# log db:test:prepare...
+# bundle exec rake --quiet db:test:prepare
 
 log creating the temporary directory...
 mkdir tmp
 
 log adding heroku to git remotes...
-git remote add heroku git@heroku.com:yourgitrepo.git
-git remote add heroku-staging git@heroku.com:yourgitrepo-staging.git
+git remote add heroku git@heroku.com:${reponame}.git
+git remote add heroku-staging git@heroku.com:${reponame}-default.git
 
 log precaching assets...
 bundle exec rake assets:precompile --quiet RAILS_ENV=production
-bundle exec rake assets:precompile --quiet RAILS_ENV=staging
+bundle exec rake assets:precompile --quiet RAILS_ENV=default
 
 log current gems:
 gem list
