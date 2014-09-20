@@ -20,6 +20,12 @@ Use this task to init a Rails app after cloning from a git repo for the first ti
 * Adds git remotes
 * Precompiles assets
 
+You can call this task passing in the name of the repository or the current directory name (of your Rail project) will be assumed.
+
+```
+  ./install railsappname
+```
+
 
 # Deploy task #
 
