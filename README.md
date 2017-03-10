@@ -38,4 +38,4 @@ Environment should be defined in config/environments/environment-name.rb (There 
 * last git deployment commit id: Use this to reverse the remote deployment to any version of your app
 
 
-*Don't forget: * For the all the tasks you first need to make adjustments for your own needs. And you also going to chmod +x for making them executable.
+*Don't forget: * For the all the tasks you first need to make adjustments for your own needs. And you will also need to chmod +x to make them executable.
