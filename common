@@ -7,7 +7,7 @@ function log {
   echo
 }
 
-function log2 {
+function log_short {
   echo
   echo .... $@
 }

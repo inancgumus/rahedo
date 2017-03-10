@@ -30,19 +30,19 @@ fi
 
 if [[ $@ =~ ' --without-assets' ]]
 then
-  log2 "No assets will be deployed"
+  log_brief "No assets will be deployed"
   DEPLOY_ASSETS=0
 fi
 
 if [[ $@ =~ ' --without-app' ]]
 then
-  log2 "No app, only assets will be deployed"
+  log_brief "No app, only assets will be deployed"
   DEPLOY_APP=0
 fi
 
 if [[ $@ =~ ' --without-asset-compilation' ]]
 then
-  log2 "No assets will be compiled"
+  log_brief "No assets will be compiled"
   COMPILE_ASSETS=0
 fi
 
@@ -83,12 +83,14 @@ then
   rake assets:precompile --quiet RAILS_ENV=$ENV
 fi
 
-log2 save $ASSETS/manifest.yml
+log_brief save $ASSETS/manifest.yml
 if [ ! -e "$ASSETS/manifest.yml" ]; then
   echo "$ASSETS/manifest.yml not found..."
   echo "  be sure that it is in the source directory so it can be deployed "
   echo "   heroku"
   exit 2
+else
+  log_brief save $ASSETS/manifest.yml
 fi
 
 if [ $DEPLOY_ASSETS -eq 1 ]
@@ -110,28 +112,28 @@ changedir ..
 log remove the old deployment directory and create a new one
 if [ -e $DEPLOYMENT_DIR ]; then
   rm -rf $DEPLOYMENT_DIR
-  log2 deployment directory removed
+  log_brief deployment directory removed
 fi
 
 mkdir $DEPLOYMENT_DIR
-log2 done
+log_brief done
 
 log copy the source codes to the pre-deployment directory
 changedir $ORIGIN_DIR
 tar zcpf - . | (cd ../$DEPLOYMENT_DIR; tar xfp -)
-log2 done
+log_brief done
 
 log put back the assets into their original directories
 #mv ../your-assets app/assets/images
 ls app/assets/images
-log2 done
+log_brief done
 
 changedir ../$ORIGIN_DIR
 
 # copy robots.txt into the deployment directory
 if [ $ENV != 'production' ]
 then
-  log2 copying robots.txt for $ENV
+  log_brief copying robots.txt for $ENV
   cp public/robots-$ENV.txt ../$DEPLOYMENT_DIR/public/robots.txt
 fi
 
